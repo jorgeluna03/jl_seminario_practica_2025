@@ -1,0 +1,33 @@
+package modelo;
+
+/**
+ * Clase que representa un Canal en el sistema de Atención Diferenciada
+ */
+public class Canal {
+    
+    // Atributos
+    private int idCanal;
+    private String nombreCanal;
+
+    // Constructor
+    public Canal(int idCanal, String nombreCanal) {
+        this.idCanal = idCanal;
+        this.nombreCanal = nombreCanal;
+    }
+
+    // Getters y Setters
+    public int getIdCanal() { return idCanal; }
+    public void setIdCanal(int idCanal) { this.idCanal = idCanal; }
+
+    public String getNombreCanal() { return nombreCanal; }
+    public void setNombreCanal(String nombreCanal) { this.nombreCanal = nombreCanal; }
+
+    // Método toString para imprimir información del Canal
+    @Override
+    public String toString() {
+        return "Canal{" +
+                "idCanal=" + idCanal +
+                ", nombreCanal=\"" + nombreCanal + "\"" +
+                '}';
+    }
+}
