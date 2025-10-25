@@ -10,4 +10,13 @@
         <maven.compiler.release>23</maven.compiler.release>
         <exec.mainClass>com.mycompany.sistemaatenciondiferenciada2025.SistemaAtencionDiferenciada2025</exec.mainClass>
     </properties>
+    
+    <dependencies>
+        <!-- Driver MySQL -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.33</version>
+        </dependency>
+    </dependencies>
 </project>

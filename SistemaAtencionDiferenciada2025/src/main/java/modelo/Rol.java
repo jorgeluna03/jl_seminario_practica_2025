@@ -16,6 +16,12 @@ public class Rol {
         this.descripcionRol = descripcionRol;
     }
 
+    // Constructor por defecto
+    public Rol() {
+        this.idRol = 0;
+        this.descripcionRol = "";
+    }
+
     // Getters y Setters
     public int getIdRol() { return idRol; }
     public void setIdRol(int idRol) { this.idRol = idRol; }

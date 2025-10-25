@@ -15,6 +15,12 @@ public class Canal {
         this.nombreCanal = nombreCanal;
     }
 
+    // Constructor por defecto
+    public Canal() {
+        this.idCanal = 0;
+        this.nombreCanal = "";
+    }
+
     // Getters y Setters
     public int getIdCanal() { return idCanal; }
     public void setIdCanal(int idCanal) { this.idCanal = idCanal; }

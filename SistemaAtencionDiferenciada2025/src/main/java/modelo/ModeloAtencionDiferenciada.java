@@ -24,6 +24,16 @@ public class ModeloAtencionDiferenciada {
         this.segmento = segmento;
     }
 
+    // Constructor por defecto
+    public ModeloAtencionDiferenciada() {
+        this.frecuencia = 0;
+        this.recencia = 0;
+        this.monto = 0.0;
+        this.idModelo = new Modelo();
+        this.cliente = new Cliente();
+        this.segmento = "";
+    }
+
     // Getters y Setters
     public int getFrecuencia() { return frecuencia; }
     public void setFrecuencia(int frecuencia) { this.frecuencia = frecuencia; }

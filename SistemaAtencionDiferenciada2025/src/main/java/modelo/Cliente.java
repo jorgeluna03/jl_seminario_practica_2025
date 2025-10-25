@@ -24,8 +24,13 @@ public class Cliente {
         this.fechaIngreso = fechaIngreso;
     }
 
+    // Constructor por defecto
     public Cliente() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        this.nombre = "";
+        this.apellido = "";
+        this.fechaNacimiento = LocalDate.now();
+        this.dni = "";
+        this.fechaIngreso = LocalDate.now();
     }
 
     // Getters y Setters
@@ -43,6 +48,10 @@ public class Cliente {
 
     public LocalDate getFechaIngreso() { return fechaIngreso; }
     public void setFechaIngreso(LocalDate fechaIngreso) { this.fechaIngreso = fechaIngreso; }
+    
+    // Método de compatibilidad para getFechaRegistro
+    public LocalDate getFechaRegistro() { return fechaIngreso; }
+    public void setFechaRegistro(LocalDate fechaRegistro) { this.fechaIngreso = fechaRegistro; }
 
     // Método toString para imprimir información del Cliente
     @Override
@@ -57,12 +66,13 @@ public class Cliente {
 				'}';
 	}
 
+    // Métodos adicionales para compatibilidad
     public int getId() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return 0; // Valor por defecto para el prototipo
     }
 
     public void setId(int idCliente) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        // Método vacío para compatibilidad
     }
 
 }

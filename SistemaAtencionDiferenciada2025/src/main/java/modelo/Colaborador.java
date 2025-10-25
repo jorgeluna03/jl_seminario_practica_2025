@@ -25,6 +25,16 @@ public class Colaborador {
         this.rol = rol;
     }
 
+    // Constructor por defecto
+    public Colaborador() {
+        this.legajo = 0;
+        this.nombre = "";
+        this.apellido = "";
+        this.fechaNacimiento = LocalDate.now();
+        this.fechaIngreso = LocalDate.now();
+        this.rol = new Rol();
+    }
+
     // Getters y Setters
     public int getLegajo() { return legajo; }
     public void setLegajo(int legajo) { this.legajo = legajo; }

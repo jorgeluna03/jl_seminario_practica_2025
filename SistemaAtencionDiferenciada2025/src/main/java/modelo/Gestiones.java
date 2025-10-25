@@ -21,6 +21,15 @@ public class Gestiones {
         this.esDiferencial = esDiferencial;
     }
 
+    // Constructor por defecto
+    public Gestiones() {
+        this.idGestion = 0;
+        this.nombreGestion = "";
+        this.prioridad = 0;
+        this.orden = 0;
+        this.esDiferencial = false;
+    }
+
     // Getters y Setters
     public int getIdGestion() { return idGestion; }
     public void setIdGestion(int idGestion) { this.idGestion = idGestion; }

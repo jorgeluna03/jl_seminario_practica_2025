@@ -22,8 +22,12 @@ public class Turnero {
         this.codigoTurno = codigoTurno;
     }
 
+    // Constructor por defecto
     public Turnero() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        this.idTurnero = 0;
+        this.fecha = LocalDate.now();
+        this.cliente = new Cliente();
+        this.codigoTurno = "";
     }
 
     // Getters y Setters

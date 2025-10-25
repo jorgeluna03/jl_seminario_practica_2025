@@ -25,6 +25,17 @@ public class Modelo {
         this.rangoSegmentos = rangoSegmentos;
     }
 
+    // Constructor por defecto
+    public Modelo() {
+        this.idModelo = 0;
+        this.periodo = "";
+        this.rangoFrecuencia = "";
+        this.rangoRecencia = "";
+        this.rangoMonto = "";
+        this.cantSegmentos = 0;
+        this.rangoSegmentos = "";
+    }
+
     // Getters y Setters
     public int getIdModelo() { return idModelo; }
     public void setIdModelo(int idModelo) { this.idModelo = idModelo; }
