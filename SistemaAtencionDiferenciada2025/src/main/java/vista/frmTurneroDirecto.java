@@ -19,6 +19,7 @@ public class frmTurneroDirecto extends JFrame {
     
     private frmPantallaTurnero turneroPanel;
     private controlador.ControladorTurnero controladorTurnero;
+    private controlador.ControladorPrincipal controladorPrincipal;
     
     /**
      * Creates new form frmTurneroDirecto
@@ -39,8 +40,11 @@ public class frmTurneroDirecto extends JFrame {
         // Crear el panel del turnero
         turneroPanel = new frmPantallaTurnero();
         
-        // Crear controlador
-        controladorTurnero = new controlador.ControladorTurnero(null);
+        // Crear controlador principal
+        controladorPrincipal = new controlador.ControladorPrincipal();
+        
+        // Crear controlador del turnero con referencia al principal
+        controladorTurnero = new controlador.ControladorTurnero(controladorPrincipal);
         
         // Conectar controlador con el panel
         turneroPanel.setControladorTurnero(controladorTurnero);

@@ -48,3 +48,4 @@ public class frmClienteMDI extends javax.swing.JInternalFrame {
         setLocation(150, 150);
     }
 }
+

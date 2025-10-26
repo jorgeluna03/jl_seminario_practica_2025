@@ -11,7 +11,7 @@ public class ClienteDAO {
     
     public Cliente obtenerClientePorDni(String dniBuscado) {
         Cliente cliente = null;
-        String query = "SELECT dni, nombre, apellido, fechaNacimiento, fechaIngreso FROM Cliente WHERE dni = ? ";
+        String query = "SELECT dniCliente, nombre, apellido, fechaNacimiento, fechaIngreso FROM sistemaatenciondiferenciada.cliente WHERE dniCliente = ? ";
        
         try (Connection conn = ConexionMySQL.conectar();
              PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -24,7 +24,7 @@ public class ClienteDAO {
                         rs.getString("nombre"),
                         rs.getString("apellido"),
                         rs.getDate("fechaNacimiento").toLocalDate(),
-                        rs.getString("dni"),
+                        rs.getString("dniCliente"),
                         rs.getDate("fechaIngreso").toLocalDate()
                 );
             }

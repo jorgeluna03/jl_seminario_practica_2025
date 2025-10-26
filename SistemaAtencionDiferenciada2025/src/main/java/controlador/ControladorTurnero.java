@@ -48,11 +48,18 @@ public class ControladorTurnero implements Observer {
                 ventanaTurnero = new frmTurneroMDI();
                 ventanaTurnero.setControlador(this);
                 
-                // Abrir en el gestor de ventanas
-                controladorPrincipal.getGestorVentanas().abrirVentana("TURNERO", ventanaTurnero);
+                // Abrir en el gestor de ventanas (si el controlador principal está disponible)
+                if (controladorPrincipal != null) {
+                    controladorPrincipal.getGestorVentanas().abrirVentana("TURNERO", ventanaTurnero);
+                } else {
+                    // Si no hay controlador principal, mostrar la ventana directamente
+                    ventanaTurnero.setVisible(true);
+                }
                 
-                // Notificar evento
-                controladorPrincipal.getGestorEventos().notificarCambio("TURNERO_ABIERTO");
+                // Notificar evento (si el controlador principal está disponible)
+                if (controladorPrincipal != null) {
+                    controladorPrincipal.getGestorEventos().notificarCambio("TURNERO_ABIERTO");
+                }
             } else {
                 // Si ya está abierto, traerlo al frente
                 ventanaTurnero.setSelected(true);
@@ -82,7 +89,7 @@ public class ControladorTurnero implements Observer {
             ventanaTurnero.setLocationRelativeTo(null);
             ventanaTurnero.setVisible(true);
             
-            // Notificar evento
+            // Notificar evento (si el controlador principal está disponible)
             if (controladorPrincipal != null) {
                 controladorPrincipal.getGestorEventos().notificarCambio("TURNERO_ABIERTO");
             }
@@ -123,7 +130,9 @@ public class ControladorTurnero implements Observer {
             JOptionPane.showMessageDialog(null, mensaje, "Llamando Turno", JOptionPane.INFORMATION_MESSAGE);
             
             // Notificar evento
-            controladorPrincipal.getGestorEventos().notificarCambio("TURNO_LLAMADO");
+            if (controladorPrincipal != null) {
+                controladorPrincipal.getGestorEventos().notificarCambio("TURNO_LLAMADO");
+            }
             
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, 
@@ -172,7 +181,9 @@ public class ControladorTurnero implements Observer {
                         JOptionPane.INFORMATION_MESSAGE);
                     
                     // Notificar evento
-                    controladorPrincipal.getGestorEventos().notificarCambio("TURNO_REASIGNADO");
+                    if (controladorPrincipal != null) {
+                        controladorPrincipal.getGestorEventos().notificarCambio("TURNO_REASIGNADO");
+                    }
                 } else {
                     JOptionPane.showMessageDialog(null, 
                         "Número de turno inválido", 
@@ -217,8 +228,10 @@ public class ControladorTurnero implements Observer {
             // Agregar a la cola
             colaTurnos.add(nuevoTurno);
             
-            // Notificar evento
-            controladorPrincipal.getGestorEventos().notificarCambio("TURNO_REGISTRADO");
+            // Notificar evento (si el controlador principal está disponible)
+            if (controladorPrincipal != null) {
+                controladorPrincipal.getGestorEventos().notificarCambio("TURNO_REGISTRADO");
+            }
             
             return nuevoTurno;
             
@@ -254,7 +267,9 @@ public class ControladorTurnero implements Observer {
                     JOptionPane.INFORMATION_MESSAGE);
                 
                 // Notificar evento
-                controladorPrincipal.getGestorEventos().notificarCambio("TURNO_ATENDIDO");
+                if (controladorPrincipal != null) {
+                    controladorPrincipal.getGestorEventos().notificarCambio("TURNO_ATENDIDO");
+                }
             } else {
                 JOptionPane.showMessageDialog(null, 
                     "Turno no encontrado: " + codigoTurno, 

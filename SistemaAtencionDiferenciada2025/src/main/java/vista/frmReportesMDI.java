@@ -48,3 +48,4 @@ public class frmReportesMDI extends javax.swing.JInternalFrame {
         setLocation(200, 200);
     }
 }
+

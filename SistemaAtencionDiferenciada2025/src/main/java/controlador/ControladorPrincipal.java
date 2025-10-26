@@ -7,7 +7,7 @@
  */
 package controlador;
 
-import vista.frmMenuPrincipal;
+import vista.frmInicioMenuPrincipal;
 import modelo.ModeloAtencionDiferenciada;
 import controlador.GestorEventos;
 import controlador.GestorVentanasMDI;
@@ -23,7 +23,7 @@ import controlador.FabricaFormularios;
 public class ControladorPrincipal {
     
     // Referencias a los componentes del patrón MVC
-    private frmMenuPrincipal vista;
+    private frmInicioMenuPrincipal vista;
     private ModeloAtencionDiferenciada modelo;
     
     // Controladores específicos (patrón Command)
@@ -55,7 +55,7 @@ public class ControladorPrincipal {
         this.fabricaFormularios = new FabricaFormularios();
         
         // Inicializar vista
-        this.vista = new frmMenuPrincipal();
+        this.vista = new frmInicioMenuPrincipal();
         
         // Inicializar gestor de ventanas con el desktop pane de la vista
         this.gestorVentanas = new GestorVentanasMDI(vista.getDesktopPane());
@@ -172,7 +172,7 @@ public class ControladorPrincipal {
     
     // ========== GETTERS Y SETTERS ==========
     
-    public frmMenuPrincipal getVista() {
+    public frmInicioMenuPrincipal getVista() {
         return vista;
     }
     
