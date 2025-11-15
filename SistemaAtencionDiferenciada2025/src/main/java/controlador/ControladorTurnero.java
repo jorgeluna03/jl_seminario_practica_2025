@@ -348,19 +348,26 @@ public class ControladorTurnero implements Observer {
             }
             
             // 4. Obtener segmento y segmentoScore del cliente desde ModeloAtencionDiferenciadaDAO
-            java.util.Optional<String> segmentoOpt = modeloAtencionDAO.obtenerSegmentoPorDni(dni);
+            // Usar idCliente en lugar de DNI para buscar el segmento
+            java.util.Optional<String> segmentoOpt = modeloAtencionDAO.obtenerSegmentoPorIdCliente(cliente.getIdCliente());
             String segmento = segmentoOpt.orElse("BAJO"); // Por defecto BAJO si no tiene segmento
-            Integer segmentoScore = modeloAtencionDAO.obtenerSegmentoScorePorDni(dni);
+            Integer segmentoScore = modeloAtencionDAO.obtenerSegmentoScorePorIdCliente(cliente.getIdCliente());
             
             // 5. Determinar idRol requerido según segmento y prioridad
             int idRolRequerido = determinarIdRolRequerido(segmento, prioridad);
-            System.out.println("Segmento: " + segmento + ", Prioridad: " + prioridad + " → idRol requerido: " + idRolRequerido);
+            System.out.println("=== CALCULO DE SCORE ===");
+            System.out.println("Cliente: " + cliente.getIdCliente() + " (" + cliente.getNombre() + " " + cliente.getApellido() + ")");
+            System.out.println("Segmento: " + segmento + " (score: " + segmentoScore + ")");
+            System.out.println("Prioridad: " + prioridad);
+            System.out.println("idRol requerido: " + idRolRequerido);
             
             // 6. Calcular score combinado (menor = más prioritario)
             // Fórmula: prioridad * 10 + segmentoScore
             // Ejemplo: prioridad 1 (más alta) + segmento ALTO (1) = score 11 (muy prioritario)
             //          prioridad 4 (más baja) + segmento BAJO (5) = score 45 (menos prioritario)
             Integer score = (prioridad * 10) + segmentoScore;
+            System.out.println("SCORE CALCULADO: " + score + " (menor = más prioritario)");
+            System.out.println("========================");
             
             // 7. Generar código de turno
             String codigoTurno = generarCodigoTurno();

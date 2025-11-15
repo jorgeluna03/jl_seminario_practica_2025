@@ -120,5 +120,61 @@ public class ModeloAtencionDiferenciadaDAO {
         
         return Optional.empty();
     }
+    
+    /**
+     * Obtiene el segmento del cliente por su idCliente (PK)
+     */
+    public Optional<String> obtenerSegmentoPorIdCliente(String idCliente) {
+        String query = "SELECT segmento FROM sistemaatenciondiferenciada.modeloatenciondiferenciada " +
+                      "WHERE idCliente = ? ORDER BY idModeloAtencion DESC LIMIT 1";
+        
+        try (Connection conn = ConexionMySQL.conectar();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            
+            stmt.setString(1, idCliente);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                String segmento = rs.getString("segmento");
+                if (segmento != null && !segmento.trim().isEmpty()) {
+                    return Optional.of(segmento.trim().toUpperCase());
+                }
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error al consultar segmento del cliente por idCliente: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return Optional.empty();
+    }
+    
+    /**
+     * Obtiene el score del segmento del cliente por su idCliente (PK)
+     */
+    public Integer obtenerSegmentoScorePorIdCliente(String idCliente) {
+        Optional<String> segmentoOpt = obtenerSegmentoPorIdCliente(idCliente);
+        
+        if (segmentoOpt.isPresent()) {
+            String segmento = segmentoOpt.get();
+            
+            switch (segmento) {
+                case "ALTO":
+                    return 1;
+                case "MEDIO ALTO":
+                    return 2;
+                case "MEDIO":
+                    return 3;
+                case "MEDIO BAJO":
+                    return 4;
+                case "BAJO":
+                    return 5;
+                default:
+                    return 5; // Por defecto, el menos prioritario
+            }
+        }
+        
+        return 5; // Si no tiene segmento, asumimos BAJO (menos prioritario)
+    }
 }
 

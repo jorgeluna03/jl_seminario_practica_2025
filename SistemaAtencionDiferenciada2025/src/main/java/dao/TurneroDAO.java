@@ -675,6 +675,21 @@ public class TurneroDAO {
             return Integer.compare(t1.getIdTurnero(), t2.getIdTurnero());
         });
         
+        // Mostrar información de debug
+        System.out.println("\n=== REORDENAMIENTO DE COLA ===");
+        System.out.println("Turnos EN_ATENCION/LLAMADO: " + turnosEnAtencion.size());
+        for (Turnero t : turnosEnAtencion) {
+            System.out.println("  - " + t.getCodigoTurno() + " (orden: " + t.getOrden() + ", estado: " + t.getEstado() + ")");
+        }
+        System.out.println("Turnos EN_ESPERA a reordenar: " + turnosEnEspera.size());
+        for (Turnero t : turnosEnEspera) {
+            String clienteInfo = (t.getCliente() != null) ? 
+                t.getCliente().getNombre() + " " + t.getCliente().getApellido() : "N/A";
+            System.out.println("  - " + t.getCodigoTurno() + " | Cliente: " + clienteInfo + 
+                             " | Score: " + t.getScore() + " | Prioridad: " + t.getPrioridad() + 
+                             " | SegmentoScore: " + t.getSegmentoScore());
+        }
+        
         // Actualizar el orden de los turnos EN_ESPERA
         // Los turnos LLAMADO/EN_ATENCION mantienen su orden actual
         // Los turnos EN_ESPERA se reordenan empezando después de los que están en atención
@@ -682,22 +697,116 @@ public class TurneroDAO {
         int ordenInicial = turnosEnAtencion.size() + 1; // Empezar después de los que están en atención
         int orden = ordenInicial;
         
+        System.out.println("Orden inicial para EN_ESPERA: " + ordenInicial);
         for (Turnero turno : turnosEnEspera) {
             boolean actualizado = actualizarOrden(turno.getCodigoTurno(), orden);
             if (actualizado) {
                 turno.setOrden(orden);
-                System.out.println("Turno " + turno.getCodigoTurno() + " (EN_ESPERA) reordenado a posición " + orden + " (score: " + turno.getScore() + ")");
+                String clienteInfo = (turno.getCliente() != null) ? 
+                    turno.getCliente().getNombre() + " " + turno.getCliente().getApellido() : "N/A";
+                System.out.println("✓ Turno " + turno.getCodigoTurno() + " (" + clienteInfo + ") → orden " + orden + 
+                                 " (score: " + turno.getScore() + ", prioridad: " + turno.getPrioridad() + 
+                                 ", segmentoScore: " + turno.getSegmentoScore() + ")");
             } else {
                 todoOk = false;
-                System.err.println("Error al actualizar orden del turno " + turno.getCodigoTurno());
+                System.err.println("❌ Error al actualizar orden del turno " + turno.getCodigoTurno());
             }
             orden++;
         }
+        System.out.println("===============================\n");
         
         System.out.println("Reordenamiento completado: " + turnosEnAtencion.size() + " turnos en atención (orden mantenido) + " + 
                           turnosEnEspera.size() + " turnos EN_ESPERA reordenados");
         
         return todoOk;
+    }
+    
+    /**
+     * Lista todos los turnos en cola con información del colaborador asignado al box
+     * Retorna una lista con: Colaborador, código de turno, Cliente, Orden
+     * @return Lista de objetos con información de la cola de atención
+     */
+    public List<ColaAtencionInfo> listarColaAtencionCompleta() {
+        List<ColaAtencionInfo> lista = new ArrayList<>();
+        String sql = "SELECT t.codigoTurno, t.idCliente, t.orden, t.idBox, " +
+                     "c.nombre as nombreCliente, c.apellido as apellidoCliente, " +
+                     "col.nombre as nombreColaborador, col.apellido as apellidoColaborador, col.legajo " +
+                     "FROM sistemaatenciondiferenciada.turnero t " +
+                     "LEFT JOIN sistemaatenciondiferenciada.cliente c ON t.idCliente = c.idCliente " +
+                     "LEFT JOIN sistemaatenciondiferenciada.box_atencion b ON t.idBox = b.idBox " +
+                     "LEFT JOIN sistemaatenciondiferenciada.colaborador col ON b.id_colaborador = col.id_colaborador " +
+                     "WHERE t.estado IN ('EN_ESPERA', 'LLAMADO', 'EN_ATENCION') " +
+                     "ORDER BY t.idBox ASC, COALESCE(t.orden, 9999) ASC, COALESCE(t.score, 9999) ASC, t.fecha ASC, t.idTurnero ASC";
+        
+        try (Connection conn = ConexionMySQL.conectar();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            
+            while (rs.next()) {
+                ColaAtencionInfo info = new ColaAtencionInfo();
+                
+                // Código de turno
+                info.codigoTurno = rs.getString("codigoTurno");
+                
+                // Cliente (nombre + apellido)
+                String nombreCliente = rs.getString("nombreCliente");
+                String apellidoCliente = rs.getString("apellidoCliente");
+                if (nombreCliente != null && apellidoCliente != null) {
+                    info.cliente = nombreCliente.trim() + " " + apellidoCliente.trim();
+                } else if (nombreCliente != null) {
+                    info.cliente = nombreCliente.trim();
+                } else if (apellidoCliente != null) {
+                    info.cliente = apellidoCliente.trim();
+                } else {
+                    info.cliente = "N/A";
+                }
+                
+                // Colaborador (nombre + apellido)
+                String nombreColaborador = rs.getString("nombreColaborador");
+                String apellidoColaborador = rs.getString("apellidoColaborador");
+                if (nombreColaborador != null && apellidoColaborador != null) {
+                    info.colaborador = nombreColaborador.trim() + " " + apellidoColaborador.trim();
+                } else if (nombreColaborador != null) {
+                    info.colaborador = nombreColaborador.trim();
+                } else if (apellidoColaborador != null) {
+                    info.colaborador = apellidoColaborador.trim();
+                } else {
+                    info.colaborador = "Sin asignar";
+                }
+                
+                // Orden
+                Integer orden = rs.getObject("orden") != null ? rs.getInt("orden") : null;
+                info.orden = orden != null ? orden : 0;
+                
+                lista.add(info);
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error al listar cola de atención completa: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return lista;
+    }
+    
+    /**
+     * Clase auxiliar para almacenar información de la cola de atención
+     */
+    public static class ColaAtencionInfo {
+        public String colaborador;
+        public String codigoTurno;
+        public String cliente;
+        public int orden;
+        
+        @Override
+        public String toString() {
+            return "ColaAtencionInfo{" +
+                    "colaborador='" + colaborador + '\'' +
+                    ", codigoTurno='" + codigoTurno + '\'' +
+                    ", cliente='" + cliente + '\'' +
+                    ", orden=" + orden +
+                    '}';
+        }
     }
 }
 

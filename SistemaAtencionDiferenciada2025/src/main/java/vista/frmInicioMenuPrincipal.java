@@ -141,6 +141,7 @@ public class frmInicioMenuPrincipal extends javax.swing.JFrame {
         jMenu2 = new javax.swing.JMenu();
         jMenu3 = new javax.swing.JMenu();
         jMenu4 = new javax.swing.JMenu();
+        jMenuItem3 = new javax.swing.JMenuItem();
         jMenu5 = new javax.swing.JMenu();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -252,6 +253,16 @@ public class frmInicioMenuPrincipal extends javax.swing.JFrame {
         jMenu4.setMnemonic('r');
         jMenu4.setText("Reportes");
         jMenu4.setName("menuReportes"); // NOI18N
+
+        jMenuItem3.setText("Reporte Cola Atención");
+        jMenuItem3.setName("btnReporteColaAtencion"); // NOI18N
+        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem3ActionPerformed(evt);
+            }
+        });
+        jMenu4.add(jMenuItem3);
+
         jMenuBar1.add(jMenu4);
 
         jMenu5.setMnemonic('y');
@@ -285,6 +296,12 @@ public class frmInicioMenuPrincipal extends javax.swing.JFrame {
         vista.frmRegistrarAtencion frm = new vista.frmRegistrarAtencion();
         frm.setVisible(true);
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
+        // Abrir formulario de reporte de cola de atención
+        vista.frmReporteColaAtencion frmReporte = new vista.frmReporteColaAtencion();
+        frmReporte.setVisible(true);
+    }//GEN-LAST:event_jMenuItem3ActionPerformed
     
     // Métodos de funcionalidad para los menús
     private void miInicioActionPerformed(java.awt.event.ActionEvent evt) {
@@ -500,6 +517,7 @@ public class frmInicioMenuPrincipal extends javax.swing.JFrame {
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
+    private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JToolBar jToolBar1;
