@@ -9,8 +9,6 @@ package vista;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 /**
  * Formulario que abre directamente tu formulario frmPantallaTurnero
@@ -52,6 +50,9 @@ public class frmTurneroDirecto extends JFrame {
         
         // Conectar controlador con el panel
         turneroPanel.setControladorTurnero(controladorTurnero);
+        
+        // Interceptar el botón Entrar del panel para manejar el registro desde aquí
+        configurarBotonEntrar();
         
         getContentPane().add(panelTipoTurno, BorderLayout.WEST);
         getContentPane().add(turneroPanel, BorderLayout.CENTER);
@@ -151,6 +152,133 @@ public class frmTurneroDirecto extends JFrame {
         panelTipoTurno.add(rbReclamo);
         panelTipoTurno.add(rbOtros);
         panelTipoTurno.add(Box.createVerticalGlue());
+    }
+    
+    /**
+     * Obtiene el tipo de turno seleccionado
+     * @return String con el tipo de turno seleccionado
+     */
+    private String getTipoTurnoSeleccionado() {
+        if (rbReclamo.isSelected()) {
+            return "Reclamo";
+        } else if (rbConsultaGeneral.isSelected()) {
+            return "Consulta general";
+        } else if (rbSolicitudPrestamo.isSelected()) {
+            return "Solicitud Prestamo";
+        } else if (rbOtros.isSelected()) {
+            return "Otros";
+        }
+        return "Consulta general"; // Por defecto
+    }
+    
+    /**
+     * Configura el botón Entrar del panel para que llame al método de registro en esta clase
+     */
+    private void configurarBotonEntrar() {
+        // Buscar el botón Entrar en el panel usando reflexión o método auxiliar
+        javax.swing.JButton btnEntrar = buscarBotonEntrar();
+        if (btnEntrar != null) {
+            // Remover todos los listeners existentes
+            for (java.awt.event.ActionListener listener : btnEntrar.getActionListeners()) {
+                btnEntrar.removeActionListener(listener);
+            }
+            // Agregar nuestro listener que maneja el registro desde aquí
+            btnEntrar.addActionListener(e -> registrarTurno());
+        }
+    }
+    
+    /**
+     * Busca el botón Entrar en el panel del turnero
+     * @return JButton del botón Entrar o null si no se encuentra
+     */
+    private javax.swing.JButton buscarBotonEntrar() {
+        if (turneroPanel == null) {
+            return null;
+        }
+        
+        // Buscar el botón por nombre
+        java.awt.Component[] components = turneroPanel.getComponents();
+        for (java.awt.Component comp : components) {
+            javax.swing.JButton btn = buscarBotonEnComponente(comp, "btnEntrar");
+            if (btn != null) {
+                return btn;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Busca recursivamente un botón por nombre en un componente y sus hijos
+     */
+    private javax.swing.JButton buscarBotonEnComponente(java.awt.Component comp, String nombre) {
+        if (comp instanceof javax.swing.JButton) {
+            javax.swing.JButton btn = (javax.swing.JButton) comp;
+            if ("btnEntrar".equals(btn.getName()) || "Entrar".equals(btn.getText())) {
+                return btn;
+            }
+        }
+        
+        if (comp instanceof java.awt.Container) {
+            java.awt.Container container = (java.awt.Container) comp;
+            for (java.awt.Component child : container.getComponents()) {
+                javax.swing.JButton btn = buscarBotonEnComponente(child, nombre);
+                if (btn != null) {
+                    return btn;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Método que maneja el registro del turno cuando se presiona el botón Entrar
+     */
+    private void registrarTurno() {
+        if (controladorTurnero == null) {
+            JOptionPane.showMessageDialog(this, 
+                "Error: Controlador no inicializado", 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Obtener DNI del panel
+        String dni = turneroPanel.getDniIngresado();
+        
+        if (dni == null || dni.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "Por favor ingrese un DNI válido.", 
+                "Validación", 
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        // Obtener tipo de turno seleccionado
+        String tipoTurno = getTipoTurnoSeleccionado();
+        
+        // Llamar al controlador con DNI y tipo de turno
+        modelo.Turnero turno = controladorTurnero.registrarTurno(dni, tipoTurno);
+        
+        if (turno != null) {
+            String mensaje = String.format("""
+                                           Turno registrado exitosamente:
+                                           
+                                           C\u00f3digo: %s
+                                           Cliente: %s %s""",
+                turno.getCodigoTurno(),
+                turno.getCliente().getNombre(),
+                turno.getCliente().getApellido()
+            );
+            
+            JOptionPane.showMessageDialog(this, 
+                mensaje, 
+                "Turno Registrado", 
+                JOptionPane.INFORMATION_MESSAGE);
+            
+            // Limpiar campo de DNI
+            turneroPanel.limpiarCampo();
+        }
     }
 
     /**

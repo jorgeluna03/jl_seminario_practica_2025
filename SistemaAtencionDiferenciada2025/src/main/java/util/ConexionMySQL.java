@@ -10,7 +10,8 @@ import java.sql.SQLException;
 
 public class ConexionMySQL {
   
-    private static final String URL = "jdbc:mysql://localhost:3306/SistemaAtencionDiferenciada?useSSL=false&serverTimezone=UTC";
+    // Agregar parámetros para manejar UTF-8 correctamente (caracteres especiales, acentos, etc.)
+    private static final String URL = "jdbc:mysql://localhost:3306/SistemaAtencionDiferenciada?useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8";
     private static final String USUARIO = "root";
     private static final String PASS = "Oracle.01";
 

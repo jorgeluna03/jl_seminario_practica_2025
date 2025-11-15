@@ -49,3 +49,7 @@ public class frmAtencionMDI extends javax.swing.JInternalFrame {
     }
 }
 
+
+
+
+

@@ -1,8 +1,6 @@
 package modelo;
 
-/**
- * Clase que representa un Canal en el sistema de Atención Diferenciada
- */
+
 public class Canal {
     
     // Atributos

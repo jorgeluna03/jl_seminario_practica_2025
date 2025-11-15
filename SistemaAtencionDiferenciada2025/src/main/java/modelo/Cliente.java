@@ -9,14 +9,26 @@ import java.time.LocalDate;
 public class Cliente {
     
     // Atributos
+    private String idCliente; // PK de la tabla cliente (varchar(20))
     private String nombre;
     private String apellido;
     private LocalDate fechaNacimiento;
-    private String dni;
+    private String dni; // dniCliente (campo separado de idCliente)
     private LocalDate fechaIngreso;
 
     // Constructor
+    public Cliente(String idCliente, String nombre, String apellido, LocalDate fechaNacimiento, String dni, LocalDate fechaIngreso) {
+        this.idCliente = idCliente;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.fechaNacimiento = fechaNacimiento;
+        this.dni = dni;
+        this.fechaIngreso = fechaIngreso;
+    }
+    
+    // Constructor sin idCliente (para compatibilidad)
     public Cliente(String nombre, String apellido, LocalDate fechaNacimiento, String dni, LocalDate fechaIngreso) {
+        this.idCliente = null;
         this.nombre = nombre;
         this.apellido = apellido;
         this.fechaNacimiento = fechaNacimiento;
@@ -26,6 +38,7 @@ public class Cliente {
 
     // Constructor por defecto
     public Cliente() {
+        this.idCliente = null;
         this.nombre = "";
         this.apellido = "";
         this.fechaNacimiento = LocalDate.now();
@@ -34,6 +47,9 @@ public class Cliente {
     }
 
     // Getters y Setters
+    public String getIdCliente() { return idCliente; }
+    public void setIdCliente(String idCliente) { this.idCliente = idCliente; }
+
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
 

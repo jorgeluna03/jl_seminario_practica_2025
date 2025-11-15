@@ -11,7 +11,8 @@ public class ClienteDAO {
     
     public Cliente obtenerClientePorDni(String dniBuscado) {
         Cliente cliente = null;
-        String query = "SELECT dniCliente, nombre, apellido, fechaNacimiento, fechaIngreso FROM sistemaatenciondiferenciada.cliente WHERE dniCliente = ? ";
+        // Buscar por dniCliente pero obtener idCliente (PK) para usarlo en turnero
+        String query = "SELECT idCliente, dniCliente, nombre, apellido, fechaNacimiento, fechaIngreso FROM sistemaatenciondiferenciada.cliente WHERE dniCliente = ? ";
        
         try (Connection conn = ConexionMySQL.conectar();
              PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -21,6 +22,7 @@ public class ClienteDAO {
 
             if (rs.next()) {
                 cliente = new Cliente(
+                        rs.getString("idCliente"),
                         rs.getString("nombre"),
                         rs.getString("apellido"),
                         rs.getDate("fechaNacimiento").toLocalDate(),
@@ -31,6 +33,38 @@ public class ClienteDAO {
 
         } catch (SQLException e1) {
            System.err.println("Error al consultar cliente: " + e1.getMessage());
+           e1.printStackTrace();
+        }
+
+        return cliente;
+    }
+    
+    /**
+     * Obtiene un cliente por su idCliente (PK)
+     */
+    public Cliente obtenerClientePorIdCliente(String idCliente) {
+        Cliente cliente = null;
+        String query = "SELECT idCliente, dniCliente, nombre, apellido, fechaNacimiento, fechaIngreso FROM sistemaatenciondiferenciada.cliente WHERE idCliente = ? ";
+       
+        try (Connection conn = ConexionMySQL.conectar();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, idCliente);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                cliente = new Cliente(
+                        rs.getString("idCliente"),
+                        rs.getString("nombre"),
+                        rs.getString("apellido"),
+                        rs.getDate("fechaNacimiento").toLocalDate(),
+                        rs.getString("dniCliente"),
+                        rs.getDate("fechaIngreso").toLocalDate()
+                );
+            }
+
+        } catch (SQLException e1) {
+           System.err.println("Error al consultar cliente por idCliente: " + e1.getMessage());
            e1.printStackTrace();
         }
 

@@ -62,29 +62,73 @@ public class GestionesDAO {
     
     public List<Gestiones> listarTodas() {
         List<Gestiones> gestiones = new ArrayList<>();
-        String query = "SELECT idGestion, nombreGestion, prioridad, orden, esDiferencial " +
-                      "FROM sistemaatenciondiferenciada.gestiones ORDER BY prioridad ASC, orden ASC";
+        // Ordenar por nombreGestion (ORDER BY 1 significa ordenar por la primera columna, que es nombreGestion)
+        String query = "SELECT nombreGestion, idGestion, prioridad, orden, esDiferencial " +
+                      "FROM sistemaatenciondiferenciada.gestiones ORDER BY nombreGestion";
+        
+        System.out.println("=== LISTANDO TODAS LAS GESTIONES ===");
+        System.out.println("SQL: " + query);
         
         try (Connection conn = ConexionMySQL.conectar();
              PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             
+            int contador = 0;
             while (rs.next()) {
-                Gestiones gestion = new Gestiones(
-                    rs.getInt("idGestion"),
-                    rs.getString("nombreGestion"),
-                    rs.getInt("prioridad"),
-                    rs.getInt("orden"),
-                    rs.getBoolean("esDiferencial")
-                );
-                gestiones.add(gestion);
+                try {
+                    contador++;
+                    
+                    // Leer campos de forma segura
+                    int idGestion = rs.getInt("idGestion");
+                    String nombreGestion = rs.getString("nombreGestion");
+                    int prioridad = rs.getInt("prioridad");
+                    int orden = rs.getInt("orden");
+                    boolean esDiferencial = rs.getBoolean("esDiferencial");
+                    
+                    // Verificar si hay valores null problemáticos
+                    if (nombreGestion == null) {
+                        System.err.println("⚠ ADVERTENCIA: Gestion " + contador + " tiene nombreGestion NULL, usando 'SIN NOMBRE'");
+                        nombreGestion = "SIN NOMBRE (idGestion=" + idGestion + ")";
+                    }
+                    
+                    Gestiones gestion = new Gestiones(
+                        idGestion,
+                        nombreGestion,
+                        prioridad,
+                        orden,
+                        esDiferencial
+                    );
+                    gestiones.add(gestion);
+                    System.out.println("  Gestion " + contador + ": idGestion=" + gestion.getIdGestion() + 
+                                     ", nombreGestion=" + gestion.getNombreGestion() + 
+                                     " (length=" + (nombreGestion != null ? nombreGestion.length() : 0) + ")");
+                    
+                } catch (SQLException e) {
+                    System.err.println("❌ ERROR al leer gestion " + contador + ":");
+                    System.err.println("   Mensaje: " + e.getMessage());
+                    System.err.println("   SQL State: " + e.getSQLState());
+                    System.err.println("   Error Code: " + e.getErrorCode());
+                    e.printStackTrace();
+                    // Continuar con la siguiente fila en lugar de detener el bucle
+                } catch (Exception e) {
+                    System.err.println("❌ ERROR INESPERADO al leer gestion " + contador + ":");
+                    System.err.println("   Mensaje: " + e.getMessage());
+                    e.printStackTrace();
+                    // Continuar con la siguiente fila
+                }
             }
             
+            System.out.println("Total de gestiones encontradas: " + contador);
+            System.out.println("Total de gestiones agregadas a la lista: " + gestiones.size());
+            
         } catch (SQLException e) {
-            System.err.println("Error al listar gestiones: " + e.getMessage());
+            System.err.println("❌ ERROR al listar gestiones: " + e.getMessage());
+            System.err.println("SQL State: " + e.getSQLState());
+            System.err.println("Error Code: " + e.getErrorCode());
             e.printStackTrace();
         }
         
+        System.out.println("Total de gestiones retornadas: " + gestiones.size());
         return gestiones;
     }
 }

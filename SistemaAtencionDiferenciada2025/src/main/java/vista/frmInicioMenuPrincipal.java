@@ -282,10 +282,8 @@ public class frmInicioMenuPrincipal extends javax.swing.JFrame {
     
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // Botón Atención - Abrir módulo de atención
-        javax.swing.JOptionPane.showMessageDialog(this, 
-            "Módulo de Atención abierto", 
-            "Atención", 
-            javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        vista.frmRegistrarAtencion frm = new vista.frmRegistrarAtencion();
+        frm.setVisible(true);
     }//GEN-LAST:event_jButton2ActionPerformed
     
     // Métodos de funcionalidad para los menús

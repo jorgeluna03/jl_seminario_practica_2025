@@ -13,6 +13,8 @@ import modelo.Cliente;
 import dao.ClienteDAO;
 import dao.GestionesDAO;
 import dao.ModeloAtencionDiferenciadaDAO;
+import dao.TurneroDAO;
+import dao.BoxAtencionDAO;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
@@ -31,6 +33,8 @@ public class ControladorTurnero implements Observer {
     private ClienteDAO clienteDAO;
     private GestionesDAO gestionesDAO;
     private ModeloAtencionDiferenciadaDAO modeloAtencionDAO;
+    private TurneroDAO turneroDAO;
+    private BoxAtencionDAO boxAtencionDAO;
     
     /**
      * Constructor del Controlador del Turnero
@@ -39,10 +43,46 @@ public class ControladorTurnero implements Observer {
     public ControladorTurnero(ControladorPrincipal controladorPrincipal) {
         this.controladorPrincipal = controladorPrincipal;
         this.colaTurnos = new ArrayList<>();
-        this.contadorTurnos = 1;
         this.clienteDAO = new ClienteDAO();
         this.gestionesDAO = new GestionesDAO();
         this.modeloAtencionDAO = new ModeloAtencionDiferenciadaDAO();
+        this.turneroDAO = new TurneroDAO();
+        this.boxAtencionDAO = new BoxAtencionDAO();
+        
+        // Inicializar contador desde la BD para evitar duplicados
+        inicializarContadorTurnos();
+    }
+    
+    /**
+     * Inicializa el contador de turnos basándose en los valores máximos de la BD
+     * Busca el máximo idTurnero y el máximo número de código de turno
+     * Usa el mayor de ambos para asegurar que no haya duplicados
+     */
+    private void inicializarContadorTurnos() {
+        try {
+            int maxIdTurnero = turneroDAO.obtenerMaximoIdTurnero();
+            int maxNumeroCodigo = turneroDAO.obtenerMaximoNumeroCodigoTurno();
+            
+            // Usar el mayor entre idTurnero y número de código para evitar duplicados
+            int maximo = Math.max(maxIdTurnero, maxNumeroCodigo);
+            
+            // El siguiente turno debe ser maximo + 1
+            this.contadorTurnos = maximo + 1;
+            
+            System.out.println("=== INICIALIZACIÓN DE CONTADOR DE TURNOS ===");
+            System.out.println("Máximo idTurnero en BD: " + maxIdTurnero);
+            System.out.println("Máximo número de código en BD: " + maxNumeroCodigo);
+            System.out.println("Próximo idTurnero: " + this.contadorTurnos);
+            // Generar código de ejemplo para verificar (después de asignar contadorTurnos)
+            String siguienteCodigo = generarCodigoTurno();
+            System.out.println("Próximo código de turno: " + siguienteCodigo);
+            
+        } catch (Exception e) {
+            System.err.println("Error al inicializar contador de turnos: " + e.getMessage());
+            System.err.println("Usando valor por defecto: 1");
+            e.printStackTrace();
+            this.contadorTurnos = 1;
+        }
     }
     
     /**
@@ -238,6 +278,49 @@ public class ControladorTurnero implements Observer {
     }
     
     /**
+     * Determina el idRol requerido según el segmento del cliente y la prioridad de la gestión
+     * @param segmento Segmento del cliente: "ALTO", "MEDIO", "BAJO"
+     * @param prioridad Prioridad de la gestión (1 = más alta, 4+ = más baja)
+     * @return idRol requerido
+     */
+    private int determinarIdRolRequerido(String segmento, int prioridad) {
+        // Lógica de asignación de rol según segmento y prioridad
+        // Cliente BUENO (ALTO) + Prioridad ALTA (1) → idRol = 1
+        // Cliente BUENO (ALTO) + Prioridad MEDIA/BAJA → idRol = 2
+        // Cliente REGULAR (MEDIO) + Prioridad ALTA → idRol = 2
+        // Cliente REGULAR (MEDIO) + Prioridad MEDIA/BAJA → idRol = 3
+        // Cliente MALO (BAJO) + Prioridad ALTA → idRol = 2
+        // Cliente MALO (BAJO) + Prioridad MEDIA/BAJA → idRol = 3
+        
+        if (segmento == null) {
+            segmento = "BAJO"; // Por defecto
+        }
+        
+        String segmentoUpper = segmento.toUpperCase().trim();
+        
+        // Prioridad alta = 1
+        if (prioridad == 1) {
+            if ("ALTO".equals(segmentoUpper)) {
+                return 1; // Cliente bueno con prioridad alta → rol 1
+            } else {
+                return 2; // Cliente regular/malo con prioridad alta → rol 2
+            }
+        } 
+        // Prioridad media/alta = 2
+        else if (prioridad == 2) {
+            if ("ALTO".equals(segmentoUpper)) {
+                return 2; // Cliente bueno con prioridad media → rol 2
+            } else {
+                return 3; // Cliente regular/malo con prioridad media → rol 3
+            }
+        }
+        // Prioridad media/baja o baja = 3, 4, 5+
+        else {
+            return 3; // Prioridad baja → rol 3
+        }
+    }
+    
+    /**
      * Comando: Registrar un nuevo turno
      * @param dni DNI del cliente
      * @param tipoTurno Tipo de turno: "Consulta general", "Solicitud Prestamo", "Reclamo", "Otros"
@@ -264,19 +347,25 @@ public class ControladorTurnero implements Observer {
                 throw new Exception("No se pudo obtener la prioridad para idGestion: " + idGestion);
             }
             
-            // 4. Obtener segmentoScore del cliente desde ModeloAtencionDiferenciadaDAO
+            // 4. Obtener segmento y segmentoScore del cliente desde ModeloAtencionDiferenciadaDAO
+            java.util.Optional<String> segmentoOpt = modeloAtencionDAO.obtenerSegmentoPorDni(dni);
+            String segmento = segmentoOpt.orElse("BAJO"); // Por defecto BAJO si no tiene segmento
             Integer segmentoScore = modeloAtencionDAO.obtenerSegmentoScorePorDni(dni);
             
-            // 5. Calcular score combinado (menor = más prioritario)
+            // 5. Determinar idRol requerido según segmento y prioridad
+            int idRolRequerido = determinarIdRolRequerido(segmento, prioridad);
+            System.out.println("Segmento: " + segmento + ", Prioridad: " + prioridad + " → idRol requerido: " + idRolRequerido);
+            
+            // 6. Calcular score combinado (menor = más prioritario)
             // Fórmula: prioridad * 10 + segmentoScore
             // Ejemplo: prioridad 1 (más alta) + segmento ALTO (1) = score 11 (muy prioritario)
             //          prioridad 4 (más baja) + segmento BAJO (5) = score 45 (menos prioritario)
             Integer score = (prioridad * 10) + segmentoScore;
             
-            // 6. Generar código de turno
+            // 7. Generar código de turno
             String codigoTurno = generarCodigoTurno();
             
-            // 7. Crear nuevo turno con todos los datos
+            // 8. Crear nuevo turno con todos los datos (sin box aún)
             Turnero nuevoTurno = new Turnero(contadorTurnos++, LocalDate.now(), cliente, codigoTurno);
             nuevoTurno.setEstado("EN_ESPERA");
             nuevoTurno.setIdGestion(idGestion);
@@ -284,10 +373,79 @@ public class ControladorTurnero implements Observer {
             nuevoTurno.setSegmentoScore(segmentoScore);
             nuevoTurno.setScore(score);
             
-            // 8. Agregar a la cola (por ahora en orden de llegada, luego se ordenará por score)
+            // 9. Persistir en base de datos primero (sin box, se asignará después)
+            boolean guardado = turneroDAO.guardarTurnero(nuevoTurno);
+            if (!guardado) {
+                String mensajeError = "ADVERTENCIA: No se pudo guardar el turno en la base de datos.\n" +
+                                     "Código: " + codigoTurno + "\n\n" +
+                                     "Revisa la consola para ver el error detallado.\n" +
+                                     "Posibles causas:\n" +
+                                     "- La tabla turnero no tiene los campos nuevos (ejecuta el script SQL)\n" +
+                                     "- Error de conexión a la base de datos\n" +
+                                     "- El cliente no existe en la tabla cliente";
+                
+                System.err.println("ADVERTENCIA: No se pudo guardar el turno en la base de datos. Código: " + codigoTurno);
+                
+                // Mostrar mensaje al usuario
+                JOptionPane.showMessageDialog(null, 
+                    mensajeError, 
+                    "Error al Persistir Turno", 
+                    JOptionPane.WARNING_MESSAGE);
+                
+                // Continuar de todas formas para no interrumpir el flujo
+            } else {
+                System.out.println("✓ Turno guardado exitosamente en BD: " + codigoTurno);
+                
+                // 10. Buscar box disponible con el rol requerido (después de guardar)
+                System.out.println("\n=== BUSCANDO BOX DISPONIBLE ===");
+                System.out.println("idRol requerido: " + idRolRequerido);
+                java.util.Optional<Integer> idBoxOpt = boxAtencionDAO.buscarBoxDisponiblePorRol(idRolRequerido);
+                Integer idBox = null;
+                
+                if (idBoxOpt.isPresent()) {
+                    idBox = idBoxOpt.get();
+                    System.out.println("✓ Box encontrado: " + idBox + " (rol: " + idRolRequerido + ")");
+                    
+                    // 11. Asignar box al turno en BD
+                    System.out.println("\n=== ASIGNANDO BOX AL TURNO ===");
+                    boolean boxAsignado = turneroDAO.asignarBox(codigoTurno, idBox);
+                    if (boxAsignado) {
+                        nuevoTurno.setIdBox(idBox);
+                        System.out.println("✓ Box " + idBox + " asignado al turno " + codigoTurno + " en memoria y BD");
+                        
+                        // Verificar que se guardó correctamente
+                        java.util.Optional<Turnero> turnoVerificado = turneroDAO.buscarPorCodigo(codigoTurno);
+                        if (turnoVerificado.isPresent() && turnoVerificado.get().getIdBox() != null) {
+                            System.out.println("✓ Verificado: idBox guardado correctamente en BD = " + turnoVerificado.get().getIdBox());
+                        } else {
+                            System.err.println("❌ ADVERTENCIA: El idBox no se guardó correctamente en BD");
+                        }
+                        
+                        // 12. Reordenar la cola del box según score (el nuevo turno puede tener mayor prioridad)
+                        System.out.println("\n=== REORDENANDO COLA DEL BOX ===");
+                        boolean reordenado = turneroDAO.reordenarColaPorBox(idBox);
+                        if (reordenado) {
+                            System.out.println("✓ Cola del box " + idBox + " reordenada correctamente");
+                        } else {
+                            System.err.println("⚠ Error al reordenar la cola del box " + idBox);
+                        }
+                    } else {
+                        System.err.println("❌ ERROR: No se pudo asignar box " + idBox + " al turno " + codigoTurno);
+                        System.err.println("   Revisa los logs anteriores para ver el error detallado");
+                    }
+                } else {
+                    System.out.println("⚠ ADVERTENCIA: No se encontró box disponible con rol " + idRolRequerido);
+                    System.out.println("   Posibles causas:");
+                    System.out.println("   - No hay boxes con estado 'Asignado' en la tabla box_atencion");
+                    System.out.println("   - No hay colaboradores con idRol = " + idRolRequerido);
+                    System.out.println("   El turno se guardó sin box asignado (se asignará más tarde)");
+                }
+            }
+            
+            // 13. Agregar a la cola en memoria (ya está guardado en BD)
             colaTurnos.add(nuevoTurno);
             
-            // 9. Notificar evento (si el controlador principal está disponible)
+            // 14. Notificar evento (si el controlador principal está disponible)
             if (controladorPrincipal != null) {
                 controladorPrincipal.getGestorEventos().notificarCambio("TURNO_REGISTRADO");
             }
@@ -316,7 +474,7 @@ public class ControladorTurnero implements Observer {
     }
     
     /**
-     * Comando: Atender un turno (remover de la cola)
+     * Comando: Atender un turno (remover de la cola y actualizar estado en BD)
      * @param codigoTurno Código del turno a atender
      */
     public void atenderTurno(String codigoTurno) {
@@ -334,6 +492,9 @@ public class ControladorTurnero implements Observer {
             }
             
             if (turnoAtendido != null) {
+                // Actualizar estado en base de datos a ATENDIDO
+                turneroDAO.actualizarEstado(codigoTurno, "ATENDIDO");
+                
                 JOptionPane.showMessageDialog(null, 
                     "Turno " + codigoTurno + " atendido exitosamente", 
                     "Éxito", 
@@ -360,6 +521,7 @@ public class ControladorTurnero implements Observer {
     
     /**
      * Asigna un Box a un turno en cola por código de turno.
+     * Cuando se asigna el box, cambia el estado a EN_ATENCION y se persiste en la base de datos.
      * @param codigoTurno Código del turno
      * @param idBox Identificador del box a asignar
      * @return true si se asignó, false si no se encontró el turno
@@ -370,6 +532,11 @@ public class ControladorTurnero implements Observer {
                 if (t.getCodigoTurno().equals(codigoTurno)) {
                     t.setIdBox(idBox);
                     t.setEstado("EN_ATENCION");
+                    
+                    // Actualizar en base de datos: estado a EN_ATENCION y asignar box
+                    // El turno ya está guardado desde que se registró (EN_ESPERA)
+                    turneroDAO.actualizarEstado(codigoTurno, "EN_ATENCION");
+                    turneroDAO.asignarBox(codigoTurno, idBox);
                     
                     // Notificar evento
                     if (controladorPrincipal != null) {

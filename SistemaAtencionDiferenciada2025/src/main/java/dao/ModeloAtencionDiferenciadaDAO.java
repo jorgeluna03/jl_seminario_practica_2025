@@ -94,5 +94,31 @@ public class ModeloAtencionDiferenciadaDAO {
         
         return Optional.ofNullable(modelo);
     }
+    
+    /**
+     * Obtiene el idModeloAtencion más reciente para un cliente por su idCliente
+     */
+    public Optional<Integer> obtenerIdModeloAtencionPorIdCliente(String idCliente) {
+        String query = "SELECT idModeloAtencion " +
+                      "FROM sistemaatenciondiferenciada.modeloatenciondiferenciada " +
+                      "WHERE idCliente = ? ORDER BY idModeloAtencion DESC LIMIT 1";
+        
+        try (Connection conn = ConexionMySQL.conectar();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            
+            stmt.setString(1, idCliente);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                return Optional.of(rs.getInt("idModeloAtencion"));
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error al consultar idModeloAtencion por idCliente: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return Optional.empty();
+    }
 }
 
