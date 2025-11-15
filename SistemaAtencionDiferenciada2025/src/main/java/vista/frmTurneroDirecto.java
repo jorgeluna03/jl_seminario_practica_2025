@@ -20,22 +20,26 @@ public class frmTurneroDirecto extends JFrame {
     private frmPantallaTurnero turneroPanel;
     private controlador.ControladorTurnero controladorTurnero;
     private controlador.ControladorPrincipal controladorPrincipal;
+    private JPanel panelTipoTurno;
+    private JRadioButton rbConsultaGeneral;
+    private JRadioButton rbSolicitudPrestamo;
+    private JRadioButton rbReclamo;
+    private JRadioButton rbOtros;
+    private ButtonGroup grupoTipoTurno;
     
-    /**
-     * Creates new form frmTurneroDirecto
-     */
+
     public frmTurneroDirecto() {
         initComponents();
     }
 
-    /**
-     * This method is called from within the constructor to initialize the form.
-     */
+ 
     private void initComponents() {
         
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setTitle("Turnero - Sistema de Atención Diferenciada 2025");
         setResizable(true);
+        
+        crearSelectorTipoTurno();
         
         // Crear el panel del turnero
         turneroPanel = new frmPantallaTurnero();
@@ -49,14 +53,12 @@ public class frmTurneroDirecto extends JFrame {
         // Conectar controlador con el panel
         turneroPanel.setControladorTurnero(controladorTurnero);
         
-        // Agregar panel al frame
+        getContentPane().add(panelTipoTurno, BorderLayout.WEST);
         getContentPane().add(turneroPanel, BorderLayout.CENTER);
         
-        // Configurar tamaño y centrar
         pack();
         setLocationRelativeTo(null);
         
-        // Configurar menú
         crearMenu();
     }
     
@@ -116,6 +118,39 @@ public class frmTurneroDirecto extends JFrame {
         menuBar.add(menuAyuda);
         
         setJMenuBar(menuBar);
+    }
+    
+    /**
+     * Crea el panel superior con el selector de tipo de turno
+     */
+    private void crearSelectorTipoTurno() {
+        panelTipoTurno = new JPanel();
+        panelTipoTurno.setLayout(new BoxLayout(panelTipoTurno, BoxLayout.Y_AXIS));
+        panelTipoTurno.setBorder(BorderFactory.createTitledBorder("Tipo de turno"));
+        
+        rbConsultaGeneral = new JRadioButton("Consulta general");
+        rbSolicitudPrestamo = new JRadioButton("Solicitud Préstamo");
+        rbReclamo = new JRadioButton("Reclamo");
+        rbOtros = new JRadioButton("Otros");
+        
+        rbConsultaGeneral.setAlignmentX(LEFT_ALIGNMENT);
+        rbSolicitudPrestamo.setAlignmentX(LEFT_ALIGNMENT);
+        rbReclamo.setAlignmentX(LEFT_ALIGNMENT);
+        rbOtros.setAlignmentX(LEFT_ALIGNMENT);
+        
+        grupoTipoTurno = new ButtonGroup();
+        grupoTipoTurno.add(rbConsultaGeneral);
+        grupoTipoTurno.add(rbSolicitudPrestamo);
+        grupoTipoTurno.add(rbReclamo);
+        grupoTipoTurno.add(rbOtros);
+        
+        rbConsultaGeneral.setSelected(true);
+        
+        panelTipoTurno.add(rbConsultaGeneral);
+        panelTipoTurno.add(rbSolicitudPrestamo);
+        panelTipoTurno.add(rbReclamo);
+        panelTipoTurno.add(rbOtros);
+        panelTipoTurno.add(Box.createVerticalGlue());
     }
 
     /**

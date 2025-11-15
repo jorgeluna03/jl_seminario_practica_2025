@@ -11,6 +11,8 @@ import vista.frmTurneroMDI;
 import modelo.Turnero;
 import modelo.Cliente;
 import dao.ClienteDAO;
+import dao.GestionesDAO;
+import dao.ModeloAtencionDiferenciadaDAO;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
@@ -27,6 +29,8 @@ public class ControladorTurnero implements Observer {
     private List<Turnero> colaTurnos;
     private int contadorTurnos;
     private ClienteDAO clienteDAO;
+    private GestionesDAO gestionesDAO;
+    private ModeloAtencionDiferenciadaDAO modeloAtencionDAO;
     
     /**
      * Constructor del Controlador del Turnero
@@ -37,6 +41,8 @@ public class ControladorTurnero implements Observer {
         this.colaTurnos = new ArrayList<>();
         this.contadorTurnos = 1;
         this.clienteDAO = new ClienteDAO();
+        this.gestionesDAO = new GestionesDAO();
+        this.modeloAtencionDAO = new ModeloAtencionDiferenciadaDAO();
     }
     
     /**
@@ -206,29 +212,82 @@ public class ControladorTurnero implements Observer {
     }
     
     /**
+     * Mapea el tipo de turno (String) a idGestion (Integer)
+     * @param tipoTurno Tipo de turno: "Consulta general", "Solicitud Prestamo", "Reclamo", "Otros"
+     * @return idGestion correspondiente o null si no se encuentra
+     */
+    private Integer mapearTipoTurnoAIdGestion(String tipoTurno) {
+        if (tipoTurno == null) {
+            return null;
+        }
+        
+        String tipoNormalizado = tipoTurno.trim().toLowerCase();
+        
+        switch (tipoNormalizado) {
+            case "consulta general":
+                return 2;
+            case "solicitud prestamo":
+                return 3;
+            case "reclamo":
+                return 1;
+            case "otros":
+                return 4;
+            default:
+                return null; // Tipo no reconocido
+        }
+    }
+    
+    /**
      * Comando: Registrar un nuevo turno
      * @param dni DNI del cliente
+     * @param tipoTurno Tipo de turno: "Consulta general", "Solicitud Prestamo", "Reclamo", "Otros"
      * @return Turnero creado
      */
-    public Turnero registrarTurno(String dni) {
+    public Turnero registrarTurno(String dni, String tipoTurno) {
         try {
-            // Buscar cliente por DNI
+            // 1. Buscar cliente por DNI
             Cliente cliente = clienteDAO.obtenerClientePorDni(dni);
             
             if (cliente == null) {
                 throw new Exception("Cliente no encontrado con DNI: " + dni);
             }
             
-            // Generar código de turno
+            // 2. Mapear tipo de turno a idGestion
+            Integer idGestion = mapearTipoTurnoAIdGestion(tipoTurno);
+            if (idGestion == null) {
+                throw new Exception("Tipo de turno no válido: " + tipoTurno);
+            }
+            
+            // 3. Obtener prioridad desde GestionesDAO
+            Integer prioridad = gestionesDAO.obtenerPrioridadPorIdGestion(idGestion);
+            if (prioridad == null) {
+                throw new Exception("No se pudo obtener la prioridad para idGestion: " + idGestion);
+            }
+            
+            // 4. Obtener segmentoScore del cliente desde ModeloAtencionDiferenciadaDAO
+            Integer segmentoScore = modeloAtencionDAO.obtenerSegmentoScorePorDni(dni);
+            
+            // 5. Calcular score combinado (menor = más prioritario)
+            // Fórmula: prioridad * 10 + segmentoScore
+            // Ejemplo: prioridad 1 (más alta) + segmento ALTO (1) = score 11 (muy prioritario)
+            //          prioridad 4 (más baja) + segmento BAJO (5) = score 45 (menos prioritario)
+            Integer score = (prioridad * 10) + segmentoScore;
+            
+            // 6. Generar código de turno
             String codigoTurno = generarCodigoTurno();
             
-            // Crear nuevo turno
+            // 7. Crear nuevo turno con todos los datos
             Turnero nuevoTurno = new Turnero(contadorTurnos++, LocalDate.now(), cliente, codigoTurno);
+            nuevoTurno.setEstado("EN_ESPERA");
+            nuevoTurno.setIdGestion(idGestion);
+            nuevoTurno.setPrioridad(prioridad);
+            nuevoTurno.setSegmentoScore(segmentoScore);
+            nuevoTurno.setScore(score);
             
-            // Agregar a la cola
+            // 8. Agregar a la cola (por ahora en orden de llegada, luego se ordenará por score)
             colaTurnos.add(nuevoTurno);
             
-            // Notificar evento (si el controlador principal está disponible)
+            // 9. Notificar evento (si el controlador principal está disponible)
             if (controladorPrincipal != null) {
                 controladorPrincipal.getGestorEventos().notificarCambio("TURNO_REGISTRADO");
             }
@@ -245,6 +304,18 @@ public class ControladorTurnero implements Observer {
     }
     
     /**
+     * Comando: Registrar un nuevo turno (método sobrecargado sin tipoTurno para compatibilidad)
+     * @param dni DNI del cliente
+     * @return Turnero creado
+     * @deprecated Usar registrarTurno(String dni, String tipoTurno) en su lugar
+     */
+    @Deprecated
+    public Turnero registrarTurno(String dni) {
+        // Por defecto, asumir "Consulta general" si no se especifica tipo
+        return registrarTurno(dni, "Consulta general");
+    }
+    
+    /**
      * Comando: Atender un turno (remover de la cola)
      * @param codigoTurno Código del turno a atender
      */
@@ -255,6 +326,8 @@ public class ControladorTurnero implements Observer {
             // Buscar y remover el turno
             for (int i = 0; i < colaTurnos.size(); i++) {
                 if (colaTurnos.get(i).getCodigoTurno().equals(codigoTurno)) {
+                    // Marcar como atendido antes de remover
+                    colaTurnos.get(i).setEstado("ATENDIDO");
                     turnoAtendido = colaTurnos.remove(i);
                     break;
                 }
@@ -282,6 +355,40 @@ public class ControladorTurnero implements Observer {
                 "Error al atender turno: " + e.getMessage(), 
                 "Error", 
                 JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * Asigna un Box a un turno en cola por código de turno.
+     * @param codigoTurno Código del turno
+     * @param idBox Identificador del box a asignar
+     * @return true si se asignó, false si no se encontró el turno
+     */
+    public boolean asignarBoxATurno(String codigoTurno, int idBox) {
+        try {
+            for (Turnero t : colaTurnos) {
+                if (t.getCodigoTurno().equals(codigoTurno)) {
+                    t.setIdBox(idBox);
+                    t.setEstado("EN_ATENCION");
+                    
+                    // Notificar evento
+                    if (controladorPrincipal != null) {
+                        controladorPrincipal.getGestorEventos().notificarCambio("TURNO_EN_ATENCION");
+                    }
+                    return true;
+                }
+            }
+            JOptionPane.showMessageDialog(null, 
+                "Turno no encontrado para asignar box: " + codigoTurno, 
+                "Información", 
+                JOptionPane.INFORMATION_MESSAGE);
+            return false;
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, 
+                "Error al asignar box al turno: " + e.getMessage(), 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+            return false;
         }
     }
     

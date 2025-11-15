@@ -13,6 +13,13 @@ public class Turnero {
     private LocalDate fecha;
     private Cliente cliente;
     private String codigoTurno;
+    private String estado; // EN_ESPERA, ATENDIDO, etc.
+    private Integer idBox; // FK a box_atencion (puede ser null si aún no está asignado)
+    private Integer orden; // Orden de atención dentro del box o cola (puede ser null hasta asignación)
+    private Integer idGestion; // FK a gestiones (tipo de gestión: Consulta general=2, Solicitud Prestamo=3, Reclamo=1, Otros=4)
+    private Integer prioridad; // Prioridad de la gestión (1 = más prioritario, viene de gestiones.prioridad)
+    private Integer segmentoScore; // Score del segmento del cliente (ALTO=1, MEDIO ALTO=2, MEDIO=3, MEDIO BAJO=4, BAJO=5)
+    private Integer score; // Score combinado para ordenamiento (menor = más prioritario)
 
     // Constructor
     public Turnero(int idTurnero, LocalDate fecha, Cliente cliente, String codigoTurno) {
@@ -20,6 +27,13 @@ public class Turnero {
         this.fecha = fecha;
         this.cliente = cliente;
         this.codigoTurno = codigoTurno;
+        this.estado = "EN_ESPERA";
+        this.idBox = null;
+        this.orden = null;
+        this.idGestion = null;
+        this.prioridad = null;
+        this.segmentoScore = null;
+        this.score = null;
     }
 
     // Constructor por defecto
@@ -28,6 +42,13 @@ public class Turnero {
         this.fecha = LocalDate.now();
         this.cliente = new Cliente();
         this.codigoTurno = "";
+        this.estado = "EN_ESPERA";
+        this.idBox = null;
+        this.orden = null;
+        this.idGestion = null;
+        this.prioridad = null;
+        this.segmentoScore = null;
+        this.score = null;
     }
 
     // Getters y Setters
@@ -42,6 +63,27 @@ public class Turnero {
 
     public String getCodigoTurno() { return codigoTurno; }
     public void setCodigoTurno(String codigoTurno) { this.codigoTurno = codigoTurno; }
+    
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
+    
+    public Integer getIdBox() { return idBox; }
+    public void setIdBox(Integer idBox) { this.idBox = idBox; }
+    
+    public Integer getOrden() { return orden; }
+    public void setOrden(Integer orden) { this.orden = orden; }
+    
+    public Integer getIdGestion() { return idGestion; }
+    public void setIdGestion(Integer idGestion) { this.idGestion = idGestion; }
+    
+    public Integer getPrioridad() { return prioridad; }
+    public void setPrioridad(Integer prioridad) { this.prioridad = prioridad; }
+    
+    public Integer getSegmentoScore() { return segmentoScore; }
+    public void setSegmentoScore(Integer segmentoScore) { this.segmentoScore = segmentoScore; }
+    
+    public Integer getScore() { return score; }
+    public void setScore(Integer score) { this.score = score; }
 
     // Método toString para imprimir información del Turnero
     @Override
@@ -51,6 +93,13 @@ public class Turnero {
                 ", fecha=" + fecha +
                 ", cliente=" + cliente +
                 ", codigoTurno=\"" + codigoTurno + "\"" +
+                ", estado=\"" + estado + "\"" +
+                ", idBox=" + idBox +
+                ", orden=" + orden +
+                ", idGestion=" + idGestion +
+                ", prioridad=" + prioridad +
+                ", segmentoScore=" + segmentoScore +
+                ", score=" + score +
                 '}';
     }
 }
