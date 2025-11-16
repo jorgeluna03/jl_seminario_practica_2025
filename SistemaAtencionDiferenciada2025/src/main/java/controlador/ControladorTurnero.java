@@ -252,6 +252,69 @@ public class ControladorTurnero implements Observer {
     }
     
     /**
+     * Arreglo constante con los tipos de turno disponibles
+     */
+    private static final String[] TIPOS_TURNO_DISPONIBLES = {
+        "Consulta general", "Solicitud Prestamo", "Reclamo", "Otros"
+    };
+    
+    /**
+     * Obtiene el arreglo de tipos de turno disponibles
+     * @return Arreglo de String con los tipos de turno
+     */
+    public String[] getTiposTurnoDisponibles() {
+        // Retornar una copia del arreglo para evitar modificaciones externas
+        return TIPOS_TURNO_DISPONIBLES.clone();
+    }
+    
+    /**
+     * Valida si un tipo de turno es válido usando el arreglo de tipos constantes
+     * @param tipoTurno Tipo de turno a validar
+     * @return true si el tipo es válido, false en caso contrario
+     */
+    public boolean esTipoTurnoValido(String tipoTurno) {
+        if (tipoTurno == null || tipoTurno.trim().isEmpty()) {
+            return false;
+        }
+        for (String tipo : TIPOS_TURNO_DISPONIBLES) {
+            if (tipo.equalsIgnoreCase(tipoTurno.trim())) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Procesa un arreglo de códigos de turno para obtener información resumida
+     * @param codigosTurnos Arreglo de códigos de turno a procesar
+     * @return Arreglo de String con información resumida de cada turno (código - estado)
+     */
+    public String[] obtenerInformacionResumida(String[] codigosTurnos) {
+        if (codigosTurnos == null || codigosTurnos.length == 0) {
+            return new String[0];
+        }
+        
+        String[] informacion = new String[codigosTurnos.length];
+        
+        for (int i = 0; i < codigosTurnos.length; i++) {
+            String codigo = codigosTurnos[i];
+            if (codigo != null && !codigo.trim().isEmpty()) {
+                java.util.Optional<Turnero> turnoOpt = turneroDAO.buscarPorCodigo(codigo);
+                if (turnoOpt.isPresent()) {
+                    Turnero turno = turnoOpt.get();
+                    informacion[i] = codigo + " - " + turno.getEstado();
+                } else {
+                    informacion[i] = codigo + " - NO ENCONTRADO";
+                }
+            } else {
+                informacion[i] = "CÓDIGO INVÁLIDO";
+            }
+        }
+        
+        return informacion;
+    }
+    
+    /**
      * Mapea el tipo de turno (String) a idGestion (Integer)
      * @param tipoTurno Tipo de turno: "Consulta general", "Solicitud Prestamo", "Reclamo", "Otros"
      * @return idGestion correspondiente o null si no se encuentra
@@ -361,12 +424,14 @@ public class ControladorTurnero implements Observer {
             System.out.println("Prioridad: " + prioridad);
             System.out.println("idRol requerido: " + idRolRequerido);
             
-            // 6. Calcular score combinado (menor = más prioritario)
-            // Fórmula: prioridad * 10 + segmentoScore
-            // Ejemplo: prioridad 1 (más alta) + segmento ALTO (1) = score 11 (muy prioritario)
-            //          prioridad 4 (más baja) + segmento BAJO (5) = score 45 (menos prioritario)
-            Integer score = (prioridad * 10) + segmentoScore;
-            System.out.println("SCORE CALCULADO: " + score + " (menor = más prioritario)");
+            // 6. Calcular score combinado (mayor = más prioritario)
+            // Fórmula: 1000 - (prioridad * 10 + segmentoScore)
+            // Ejemplo: prioridad 1 (más alta) + segmento ALTO (1) = 1000 - 11 = 989 (muy alto, más prioritario)
+            //          prioridad 4 (más baja) + segmento BAJO (5) = 1000 - 45 = 955 (más bajo, menos prioritario)
+            // Un score alto indica un mejor cliente, por lo que mayor score = mayor prioridad
+            Integer scoreCalculoBase = (prioridad * 10) + segmentoScore;
+            Integer score = 1000 - scoreCalculoBase;
+            System.out.println("SCORE CALCULADO: " + score + " (mayor = más prioritario, base: " + scoreCalculoBase + ")");
             System.out.println("========================");
             
             // 7. Generar código de turno

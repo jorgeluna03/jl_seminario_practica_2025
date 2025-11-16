@@ -13,13 +13,13 @@ public class Turnero {
     private LocalDate fecha;
     private Cliente cliente;
     private String codigoTurno;
-    private String estado; // EN_ESPERA, ATENDIDO, etc.
-    private Integer idBox; // FK a box_atencion (puede ser null si aún no está asignado)
-    private Integer orden; // Orden de atención dentro del box o cola (puede ser null hasta asignación)
+    private String estado; 
+    private Integer idBox; 
+    private Integer orden; // Orden de atención dentro del box o cola 
     private Integer idGestion; // FK a gestiones (tipo de gestión: Consulta general=2, Solicitud Prestamo=3, Reclamo=1, Otros=4)
     private Integer prioridad; // Prioridad de la gestión (1 = más prioritario, viene de gestiones.prioridad)
     private Integer segmentoScore; // Score del segmento del cliente (ALTO=1, MEDIO ALTO=2, MEDIO=3, MEDIO BAJO=4, BAJO=5)
-    private Integer score; // Score combinado para ordenamiento (menor = más prioritario)
+    private Integer score; // Score combinado para ordenamiento (mayor = más prioritario)
 
     // Constructor
     public Turnero(int idTurnero, LocalDate fecha, Cliente cliente, String codigoTurno) {

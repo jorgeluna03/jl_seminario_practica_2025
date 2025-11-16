@@ -12,6 +12,12 @@ import java.util.Optional;
 
 public class TurneroDAO {
     
+    // Arreglo constante con los estados válidos de turnos
+    public static final String[] ESTADOS_VALIDOS = {"EN_ESPERA", "LLAMADO", "EN_ATENCION", "ATENDIDO", "CANCELADO"};
+    
+    // Arreglo constante con los estados que se consideran en cola
+    public static final String[] ESTADOS_EN_COLA = {"EN_ESPERA", "LLAMADO", "EN_ATENCION"};
+    
     /**
      * Obtiene el máximo idTurnero de la base de datos
      * @return El máximo idTurnero, o 0 si no hay turnos
@@ -386,7 +392,7 @@ public class TurneroDAO {
         String sql = "SELECT idTurnero, codigoTurno, idCliente, fecha, estado, idBox, idGestion, prioridad, segmentoScore, score, orden " +
                      "FROM sistemaatenciondiferenciada.turnero " +
                      "WHERE estado IN ('EN_ESPERA','LLAMADO','EN_ATENCION') " +
-                     "ORDER BY COALESCE(score, 9999) ASC, fecha ASC, idTurnero ASC";
+                     "ORDER BY COALESCE(score, 0) DESC, fecha ASC, idTurnero ASC";
         try (Connection conn = ConexionMySQL.conectar();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -449,7 +455,7 @@ public class TurneroDAO {
                      "FROM sistemaatenciondiferenciada.turnero " +
                      "WHERE idBox = ? " +
                      "AND estado IN ('EN_ESPERA','LLAMADO','EN_ATENCION') " +
-                     "ORDER BY COALESCE(orden, 9999) ASC, COALESCE(score, 9999) ASC, fecha ASC, idTurnero ASC";
+                     "ORDER BY COALESCE(orden, 9999) ASC, COALESCE(score, 0) DESC, fecha ASC, idTurnero ASC";
         try (Connection conn = ConexionMySQL.conectar();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
@@ -541,7 +547,7 @@ public class TurneroDAO {
                      "FROM sistemaatenciondiferenciada.turnero " +
                      "WHERE idBox = ? " +
                      "AND estado = 'EN_ESPERA' " +
-                     "ORDER BY COALESCE(score, 9999) ASC, fecha ASC, idTurnero ASC";
+                     "ORDER BY COALESCE(score, 0) DESC, fecha ASC, idTurnero ASC";
         try (Connection conn = ConexionMySQL.conectar();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
@@ -658,15 +664,16 @@ public class TurneroDAO {
             return true;
         }
         
-        // Ordenar turnos EN_ESPERA por score (menor = más prioritario)
+        // Ordenar turnos EN_ESPERA por score (mayor = más prioritario)
         turnosEnEspera.sort((t1, t2) -> {
-            Integer score1 = t1.getScore() != null ? t1.getScore() : 9999;
-            Integer score2 = t2.getScore() != null ? t2.getScore() : 9999;
-            int comparacion = score1.compareTo(score2);
+            Integer score1 = t1.getScore() != null ? t1.getScore() : 0;
+            Integer score2 = t2.getScore() != null ? t2.getScore() : 0;
+            // Invertir la comparación: mayor score = mayor prioridad
+            int comparacion = score2.compareTo(score1);
             if (comparacion != 0) {
                 return comparacion;
             }
-            // Si tienen el mismo score, ordenar por fecha
+            // Si tienen el mismo score, ordenar por fecha (más antiguo primero)
             int comparacionFecha = t1.getFecha().compareTo(t2.getFecha());
             if (comparacionFecha != 0) {
                 return comparacionFecha;
@@ -723,20 +730,23 @@ public class TurneroDAO {
     
     /**
      * Lista todos los turnos en cola con información del colaborador asignado al box
-     * Retorna una lista con: Colaborador, código de turno, Cliente, Orden
+     * Retorna una lista con: Colaborador, código de turno, Cliente, Orden, Segmento, Score
      * @return Lista de objetos con información de la cola de atención
      */
     public List<ColaAtencionInfo> listarColaAtencionCompleta() {
         List<ColaAtencionInfo> lista = new ArrayList<>();
-        String sql = "SELECT t.codigoTurno, t.idCliente, t.orden, t.idBox, " +
+        String sql = "SELECT t.codigoTurno, t.idCliente, t.orden, t.idBox, t.score, " +
                      "c.nombre as nombreCliente, c.apellido as apellidoCliente, " +
-                     "col.nombre as nombreColaborador, col.apellido as apellidoColaborador, col.legajo " +
+                     "col.nombre as nombreColaborador, col.apellido as apellidoColaborador, col.legajo, " +
+                     "(SELECT m.segmento FROM sistemaatenciondiferenciada.modeloatenciondiferenciada m " +
+                     " WHERE m.idCliente = t.idCliente " +
+                     " ORDER BY m.idModeloAtencion DESC LIMIT 1) as segmentoCliente " +
                      "FROM sistemaatenciondiferenciada.turnero t " +
                      "LEFT JOIN sistemaatenciondiferenciada.cliente c ON t.idCliente = c.idCliente " +
                      "LEFT JOIN sistemaatenciondiferenciada.box_atencion b ON t.idBox = b.idBox " +
                      "LEFT JOIN sistemaatenciondiferenciada.colaborador col ON b.id_colaborador = col.id_colaborador " +
                      "WHERE t.estado IN ('EN_ESPERA', 'LLAMADO', 'EN_ATENCION') " +
-                     "ORDER BY t.idBox ASC, COALESCE(t.orden, 9999) ASC, COALESCE(t.score, 9999) ASC, t.fecha ASC, t.idTurnero ASC";
+                     "ORDER BY t.idBox ASC, COALESCE(t.orden, 9999) ASC, COALESCE(t.score, 0) DESC, t.fecha ASC, t.idTurnero ASC";
         
         try (Connection conn = ConexionMySQL.conectar();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -778,6 +788,18 @@ public class TurneroDAO {
                 Integer orden = rs.getObject("orden") != null ? rs.getInt("orden") : null;
                 info.orden = orden != null ? orden : 0;
                 
+                // Score
+                Integer score = rs.getObject("score") != null ? rs.getInt("score") : null;
+                info.score = score != null ? score : 0;
+                
+                // Segmento
+                String segmento = rs.getString("segmentoCliente");
+                if (segmento != null && !segmento.trim().isEmpty()) {
+                    info.segmento = segmento.trim().toUpperCase();
+                } else {
+                    info.segmento = "N/A";
+                }
+                
                 lista.add(info);
             }
             
@@ -790,6 +812,105 @@ public class TurneroDAO {
     }
     
     /**
+     * Valida si un estado es válido usando el arreglo de estados constantes
+     * @param estado Estado a validar
+     * @return true si el estado es válido, false en caso contrario
+     */
+    public boolean esEstadoValido(String estado) {
+        if (estado == null || estado.trim().isEmpty()) {
+            return false;
+        }
+        // Usar Arrays.binarySearch requiere ordenamiento, mejor usar búsqueda lineal
+        for (String estadoValido : ESTADOS_VALIDOS) {
+            if (estadoValido.equals(estado)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Convierte una lista de turnos a un arreglo de códigos de turno
+     * @param turnos Lista de turnos
+     * @return Arreglo de String con los códigos de turno
+     */
+    public String[] convertirListaAArrayCodigos(List<Turnero> turnos) {
+        if (turnos == null || turnos.isEmpty()) {
+            return new String[0];
+        }
+        
+        String[] codigos = new String[turnos.size()];
+        for (int i = 0; i < turnos.size(); i++) {
+            codigos[i] = turnos.get(i).getCodigoTurno();
+        }
+        return codigos;
+    }
+    
+    /**
+     * Actualiza el estado de múltiples turnos usando un arreglo de códigos
+     * @param codigosTurnos Arreglo de códigos de turno a actualizar
+     * @param nuevoEstado Nuevo estado a asignar
+     * @return Número de turnos actualizados exitosamente
+     */
+    public int actualizarEstadoPorArray(String[] codigosTurnos, String nuevoEstado) {
+        if (codigosTurnos == null || codigosTurnos.length == 0) {
+            return 0;
+        }
+        
+        if (!esEstadoValido(nuevoEstado)) {
+            System.err.println("Estado inválido: " + nuevoEstado);
+            return 0;
+        }
+        
+        int actualizados = 0;
+        String sql = "UPDATE sistemaatenciondiferenciada.turnero SET estado = ? WHERE codigoTurno = ?";
+        
+        try (Connection conn = ConexionMySQL.conectar();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            for (String codigo : codigosTurnos) {
+                if (codigo != null && !codigo.trim().isEmpty()) {
+                    ps.setString(1, nuevoEstado);
+                    ps.setString(2, codigo.trim());
+                    int filasAfectadas = ps.executeUpdate();
+                    if (filasAfectadas > 0) {
+                        actualizados++;
+                    }
+                }
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error al actualizar estados por array: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return actualizados;
+    }
+    
+    /**
+     * Obtiene un arreglo con los códigos de turno de todos los turnos en un estado específico
+     * @param estado Estado de los turnos a buscar
+     * @return Arreglo de String con los códigos de turno
+     */
+    public String[] obtenerCodigosPorEstado(String estado) {
+        if (!esEstadoValido(estado)) {
+            return new String[0];
+        }
+        
+        List<Turnero> turnos = listarEnCola(); // O usar método específico
+        List<String> codigosList = new ArrayList<>();
+        
+        for (Turnero turno : turnos) {
+            if (estado.equals(turno.getEstado())) {
+                codigosList.add(turno.getCodigoTurno());
+            }
+        }
+        
+        // Convertir ArrayList a arreglo
+        return codigosList.toArray(new String[0]);
+    }
+    
+    /**
      * Clase auxiliar para almacenar información de la cola de atención
      */
     public static class ColaAtencionInfo {
@@ -797,6 +918,8 @@ public class TurneroDAO {
         public String codigoTurno;
         public String cliente;
         public int orden;
+        public int score;
+        public String segmento;
         
         @Override
         public String toString() {
@@ -805,6 +928,8 @@ public class TurneroDAO {
                     ", codigoTurno='" + codigoTurno + '\'' +
                     ", cliente='" + cliente + '\'' +
                     ", orden=" + orden +
+                    ", score=" + score +
+                    ", segmento='" + segmento + '\'' +
                     '}';
         }
     }

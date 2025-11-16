@@ -55,11 +55,11 @@ public class frmReporteColaAtencion extends javax.swing.JFrame {
 
             },
             new String [] {
-                "Colaborador", "Código Turno", "Cliente", "Orden"
+                "Colaborador", "Código Turno", "Cliente", "Orden", "Segmento", "Score"
             }
         ) {
             boolean[] canEdit = new boolean [] {
-                false, false, false, false
+                false, false, false, false, false, false
             };
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
@@ -137,7 +137,9 @@ public class frmReporteColaAtencion extends javax.swing.JFrame {
                 info.colaborador,
                 info.codigoTurno,
                 info.cliente,
-                info.orden
+                info.orden,
+                info.segmento,
+                info.score
             });
         }
         
@@ -146,6 +148,8 @@ public class frmReporteColaAtencion extends javax.swing.JFrame {
         tablaColaAtencion.getColumnModel().getColumn(1).setPreferredWidth(120); // Código Turno
         tablaColaAtencion.getColumnModel().getColumn(2).setPreferredWidth(250); // Cliente
         tablaColaAtencion.getColumnModel().getColumn(3).setPreferredWidth(80);  // Orden
+        tablaColaAtencion.getColumnModel().getColumn(4).setPreferredWidth(120); // Segmento
+        tablaColaAtencion.getColumnModel().getColumn(5).setPreferredWidth(80);  // Score
     }
 
     /**
